@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>JAO Groundworks Ltd - Visitor Sign In</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  font-family:Arial, Helvetica, sans-serif;
+  background:#0d0d0d;
+  text-align:center;
+  margin:0;
+  padding:20px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+}
+
+.container{
+  background:#1a1a1a;
+  padding:30px;
+  width:500px;
+  max-width:95%;
+  border-radius:12px;
+  border:1px solid #2a2a2a;
+  box-shadow:0 0 25px rgba(245,130,32,0.18);
+}
+
+.logo{
+  max-width:260px;
+  margin-bottom:25px;
+}
+
+h2{
+  color:#f58220;
+  margin:5px 0;
+}
+
+h3{
+  color:#fff;
+  margin-bottom:20px;
+}
+
+input{
+  width:95%;
+  padding:13px;
+  margin:7px 0;
+  font-size:16px;
+  border-radius:6px;
+  border:1px solid #444;
+  background:#111;
+  color:#fff;
+}
+
+input::placeholder{
+  color:#aaa;
+}
+
+button{
+  width:95%;
+  padding:14px;
+  margin-top:10px;
+  font-size:18px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.signin{
+  background:#f58220;
+  color:white;
+}
+
+.signout{
+  background:#555;
+  color:white;
+}
+
+.signin:hover{ background:#d96f18; }
+.signout:hover{ background:#444; }
+
+.success{
+  color:#39d353;
+  margin-top:12px;
+  font-weight:bold;
+}
+
+.device-status{
+  margin-top:15px;
+  font-size:14px;
+  color:#bbb;
+}
+
+.modal{
+  display:none;
+  position:fixed;
+  z-index:1000;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.75);
+}
+
+.modal-content{
+  background:#1a1a1a;
+  margin:15% auto;
+  padding:25px;
+  border-radius:12px;
+  border:1px solid #f58220;
+  width:80%;
+  max-width:400px;
+  color:#fff;
+}
+
+.close-btn{
+  background:#f58220;
+  color:white;
+  padding:10px 20px;
+  margin-top:15px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<img src="logo.png" class="logo">
+
+<h2>JAO Groundworks Ltd</h2>
+<h3>Sign In / Out</h3>
+
+<input type="text" id="name" placeholder="Full Name *">
+<input type="text" id="vehicle" placeholder="Vehicle Registration *">
+<input type="text" id="site" placeholder="Site Location *">
+
+<button class="signin" onclick="signIn()">Sign In</button>
+<button class="signout" onclick="signOut()">Sign Out This Device</button>
+
+<p class="success" id="message"></p>
+
+<p class="device-status" id="deviceStatus"></p>
+
+</div>
+
+<div id="popupModal" class="modal">
+<div class="modal-content">
+<p>Signed in successfully.</p>
+<button class="close-btn" onclick="closeModal()">OK</button>
+</div>
+</div>
+
+<script>
+
+const scriptURL="https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
+
+/* DEVICE STATUS */
+
+function updateDeviceStatus(){
+  const status=document.getElementById("deviceStatus");
+
+  if(localStorage.getItem("jaoSignedIn")==="true"){
+    const name=localStorage.getItem("jaoSignedInName");
+    const vehicle=localStorage.getItem("jaoSignedInVehicle");
+    const site=localStorage.getItem("jaoSignedInSite");
+
+    status.innerText=`This device is signed in as ${name} (${vehicle}) at ${site}`;
+  }else{
+    status.innerText="This device is currently signed out.";
+  }
+}
+
+/* UI MESSAGE */
+
+function showMessage(text){
+  const msg=document.getElementById("message");
+  msg.innerText=text;
+  setTimeout(()=>msg.innerText="",8000);
+}
+
+/* SIGN IN */
+
+async function signIn(){
+
+  const name=document.getElementById("name").value.trim();
+  const vehicle=document.getElementById("vehicle").value.trim();
+  const site=document.getElementById("site").value.trim();
+
+  if(!name||!vehicle||!site){
+    alert("Please complete all fields.");
+    return;
+  }
+
+  try{
+
+    await fetch(scriptURL,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"signIn",
+        name,
+        vehicle,
+        site
+      })
+    });
+
+    /* SAVE TO DEVICE */
+    localStorage.setItem("jaoSignedIn","true");
+    localStorage.setItem("jaoSignedInName",name);
+    localStorage.setItem("jaoSignedInVehicle",vehicle);
+    localStorage.setItem("jaoSignedInSite",site);
+
+    updateDeviceStatus();
+
+    showMessage("Signed in successfully!");
+    clearFields();
+    showModal();
+
+  }catch{
+    alert("Error signing in.");
+  }
+
+}
+
+/* SIGN OUT (DEVICE LOCKED) */
+
+async function signOut(){
+
+  if(localStorage.getItem("jaoSignedIn")!=="true"){
+    alert("This device is not currently signed in.");
+    return;
+  }
+
+  const name=localStorage.getItem("jaoSignedInName");
+  const vehicle=localStorage.getItem("jaoSignedInVehicle");
+  const site=localStorage.getItem("jaoSignedInSite");
+
+  try{
+
+    await fetch(scriptURL,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"signOut",
+        name,
+        vehicle,
+        site
+      })
+    });
+
+    /* CLEAR ONLY OUR KEYS */
+    localStorage.removeItem("jaoSignedIn");
+    localStorage.removeItem("jaoSignedInName");
+    localStorage.removeItem("jaoSignedInVehicle");
+    localStorage.removeItem("jaoSignedInSite");
+
+    updateDeviceStatus();
+
+    showMessage("Signed out successfully!");
+    clearFields();
+
+  }catch{
+    alert("Error signing out.");
+  }
+
+}
+
+/* HELPERS */
+
+function clearFields(){
+  document.querySelectorAll("input").forEach(i=>i.value="");
+}
+
+function showModal(){
+  document.getElementById("popupModal").style.display="block";
+}
+
+function closeModal(){
+  document.getElementById("popupModal").style.display="none";
+}
+
+window.onclick=function(event){
+  const modal=document.getElementById("popupModal");
+  if(event.target==modal) modal.style.display="none";
+}
+
+/* LOAD */
+
+window.onload=updateDeviceStatus;
+
+</script>
+
+</body>
+</html>
