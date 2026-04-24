@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JAO Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="jao-icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="jao-icon-192.png">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <style>
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:#0d0d0d;
+      color:white;
+      padding:20px;
+    }
+
+    .container{
+      max-width:1100px;
+      margin:auto;
+    }
+
+    .header{
+      text-align:center;
+      margin-bottom:25px;
+    }
+
+    .logo{
+      max-width:250px;
+      filter:drop-shadow(0 0 12px rgba(255,255,255,0.5));
+    }
+
+    h1{
+      color:#f58220;
+      margin-bottom:5px;
+    }
+
+    .login-box, .stats, .controls, .table-box{
+      background:#1a1a1a;
+      border:1px solid #2a2a2a;
+      border-radius:12px;
+      padding:20px;
+      margin-bottom:20px;
+      box-shadow:0 0 20px rgba(245,130,32,0.12);
+    }
+
+    input, select, button{
+      padding:12px;
+      border-radius:6px;
+      border:1px solid #444;
+      background:#111;
+      color:white;
+      font-size:16px;
+      margin:5px;
+    }
+
+    button{
+      background:#f58220;
+      border:none;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:15px;
+    }
+
+    .stat-card{
+      background:#111;
+      padding:18px;
+      border-radius:10px;
+      text-align:center;
+    }
+
+    .stat-card h2{
+      color:#f58220;
+      margin:0;
+      font-size:32px;
+    }
+
+    .stat-card p{
+      margin:5px 0 0;
+      color:#bbb;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+
+    th, td{
+      padding:10px;
+      border-bottom:1px solid #333;
+      text-align:left;
+    }
+
+    th{
+      color:#f58220;
+    }
+
+    a{
+      color:#f58220;
+      font-weight:bold;
+    }
+
+    .status-in{
+      color:#39d353;
+      font-weight:bold;
+    }
+
+    .status-out{
+      color:#aaa;
+      font-weight:bold;
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    @media(max-width:700px){
+      table{
+        font-size:12px;
+      }
+
+      th, td{
+        padding:7px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <img src="logo.png" class="logo">
+    <h1>Admin Dashboard</h1>
+    <p>JAO Groundworks Ltd Site Attendance</p>
+  </div>
+
+  <div class="login-box" id="loginBox">
+    <h2>Admin Login</h2>
+    <input type="password" id="pin" placeholder="Enter Admin PIN">
+    <button onclick="loadDashboard()">Open Dashboard</button>
+    <p id="loginMessage"></p>
+  </div>
+
+  <div id="dashboard" class="hidden">
+
+    <div class="stats">
+      <div class="stat-card">
+        <h2 id="currentlyIn">0</h2>
+        <p>Currently Signed In</p>
+      </div>
+
+      <div class="stat-card">
+        <h2 id="todayTotal">0</h2>
+        <p>Today’s Sign-Ins</p>
+      </div>
+
+      <div class="stat-card">
+        <h2 id="totalRecords">0</h2>
+        <p>Total Records</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <select id="siteFilter" onchange="renderTable()">
+        <option value="ALL">All Sites</option>
+      </select>
+
+      <select id="statusFilter" onchange="renderTable()">
+        <option value="ALL">All Statuses</option>
+        <option value="IN">Currently In</option>
+        <option value="OUT">Signed Out</option>
+      </select>
+
+      <button onclick="loadDashboard()">Refresh</button>
+    </div>
+
+    <div class="table-box">
+      <h2>Attendance Records</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Vehicle</th>
+            <th>Site</th>
+            <th>Sign In</th>
+            <th>Sign Out</th>
+            <th>Status</th>
+            <th>Photo</th>
+          </tr>
+        </thead>
+        <tbody id="recordsTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const scriptURL = "PASTE_YOUR_SCRIPT_URL_HERE";
+
+let allRecords = [];
+
+async function loadDashboard(){
+  const pin = document.getElementById("pin").value.trim();
+  const msg = document.getElementById("loginMessage");
+
+  if(!pin){
+    msg.innerText = "Please enter your PIN.";
+    return;
+  }
+
+  msg.innerText = "Loading dashboard...";
+
+  try{
+    const response = await fetch(scriptURL,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"dashboardData",
+        pin:pin
+      })
+    });
+
+    const data = await response.json();
+
+    if(!data.success){
+      msg.innerText = "Incorrect PIN.";
+      return;
+    }
+
+    allRecords = data.records.reverse();
+
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+
+    buildSiteFilter();
+    updateStats();
+    renderTable();
+
+  }catch(error){
+    msg.innerText = "Error loading dashboard.";
+  }
+}
+
+function buildSiteFilter(){
+  const siteFilter = document.getElementById("siteFilter");
+  const currentValue = siteFilter.value;
+
+  siteFilter.innerHTML = `<option value="ALL">All Sites</option>`;
+
+  const sites = [...new Set(allRecords.map(r => r.site).filter(Boolean))];
+
+  sites.forEach(site=>{
+    const option = document.createElement("option");
+    option.value = site;
+    option.textContent = site;
+    siteFilter.appendChild(option);
+  });
+
+  siteFilter.value = currentValue || "ALL";
+}
+
+function updateStats(){
+  const today = new Date().toLocaleDateString("en-GB");
+
+  const currentlyIn = allRecords.filter(r => r.status === "IN").length;
+
+  const todayTotal = allRecords.filter(r => {
+    return String(r.signIn).startsWith(today);
+  }).length;
+
+  document.getElementById("currentlyIn").innerText = currentlyIn;
+  document.getElementById("todayTotal").innerText = todayTotal;
+  document.getElementById("totalRecords").innerText = allRecords.length;
+}
+
+function renderTable(){
+  const table = document.getElementById("recordsTable");
+  const siteFilter = document.getElementById("siteFilter").value;
+  const statusFilter = document.getElementById("statusFilter").value;
+
+  table.innerHTML = "";
+
+  let records = allRecords;
+
+  if(siteFilter !== "ALL"){
+    records = records.filter(r => r.site === siteFilter);
+  }
+
+  if(statusFilter !== "ALL"){
+    records = records.filter(r => r.status === statusFilter);
+  }
+
+  records.forEach(r=>{
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${r.name || ""}</td>
+      <td>${r.vehicle || ""}</td>
+      <td>${r.site || ""}</td>
+      <td>${r.signIn || ""}</td>
+      <td>${r.signOut || ""}</td>
+      <td class="${r.status === "IN" ? "status-in" : "status-out"}">${r.status || ""}</td>
+      <td>${r.photo ? `<a href="${r.photo}" target="_blank">View</a>` : ""}</td>
+    `;
+
+    table.appendChild(tr);
+  });
+}
+</script>
+
+</body>
+</html>
