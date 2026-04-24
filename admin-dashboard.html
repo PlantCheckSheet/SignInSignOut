@@ -220,7 +220,7 @@ async function loadDashboard(){
     return;
   }
 
-  msg.innerText = "Loading dashboard...";
+  msg.innerText = "Error loading dashboard: " + error.message;
 
   try{
     const response = await fetch(scriptURL,{
