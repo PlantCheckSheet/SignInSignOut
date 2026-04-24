@@ -9,128 +9,26 @@
   <meta name="theme-color" content="#0d0d0d">
 
   <style>
-    body{
-      margin:0;
-      font-family:Arial, Helvetica, sans-serif;
-      background:#0d0d0d;
-      color:white;
-      padding:20px;
-    }
-
-    .container{
-      max-width:1100px;
-      margin:auto;
-    }
-
-    .header{
-      text-align:center;
-      margin-bottom:25px;
-    }
-
-    .logo{
-      max-width:250px;
-      filter:drop-shadow(0 0 12px rgba(255,255,255,0.5));
-    }
-
-    h1{
-      color:#f58220;
-      margin-bottom:5px;
-    }
-
-    .login-box, .stats, .controls, .table-box{
-      background:#1a1a1a;
-      border:1px solid #2a2a2a;
-      border-radius:12px;
-      padding:20px;
-      margin-bottom:20px;
-      box-shadow:0 0 20px rgba(245,130,32,0.12);
-    }
-
-    input, select, button{
-      padding:12px;
-      border-radius:6px;
-      border:1px solid #444;
-      background:#111;
-      color:white;
-      font-size:16px;
-      margin:5px;
-    }
-
-    button{
-      background:#f58220;
-      border:none;
-      font-weight:bold;
-      cursor:pointer;
-    }
-
-    .stats{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-      gap:15px;
-    }
-
-    .stat-card{
-      background:#111;
-      padding:18px;
-      border-radius:10px;
-      text-align:center;
-    }
-
-    .stat-card h2{
-      color:#f58220;
-      margin:0;
-      font-size:32px;
-    }
-
-    .stat-card p{
-      margin:5px 0 0;
-      color:#bbb;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:14px;
-    }
-
-    th, td{
-      padding:10px;
-      border-bottom:1px solid #333;
-      text-align:left;
-    }
-
-    th{
-      color:#f58220;
-    }
-
-    a{
-      color:#f58220;
-      font-weight:bold;
-    }
-
-    .status-in{
-      color:#39d353;
-      font-weight:bold;
-    }
-
-    .status-out{
-      color:#aaa;
-      font-weight:bold;
-    }
-
-    .hidden{
-      display:none;
-    }
-
-    @media(max-width:700px){
-      table{
-        font-size:12px;
-      }
-
-      th, td{
-        padding:7px;
-      }
-    }
+    body{margin:0;font-family:Arial, Helvetica, sans-serif;background:#0d0d0d;color:white;padding:20px;}
+    .container{max-width:1100px;margin:auto;}
+    .header{text-align:center;margin-bottom:25px;}
+    .logo{max-width:250px;filter:drop-shadow(0 0 12px rgba(255,255,255,0.5));}
+    h1{color:#f58220;margin-bottom:5px;}
+    .login-box,.stats,.controls,.table-box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 0 20px rgba(245,130,32,0.12);}
+    input,select,button{padding:12px;border-radius:6px;border:1px solid #444;background:#111;color:white;font-size:16px;margin:5px;}
+    button{background:#f58220;border:none;font-weight:bold;cursor:pointer;}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;}
+    .stat-card{background:#111;padding:18px;border-radius:10px;text-align:center;}
+    .stat-card h2{color:#f58220;margin:0;font-size:32px;}
+    .stat-card p{margin:5px 0 0;color:#bbb;}
+    table{width:100%;border-collapse:collapse;font-size:14px;}
+    th,td{padding:10px;border-bottom:1px solid #333;text-align:left;}
+    th{color:#f58220;}
+    a{color:#f58220;font-weight:bold;}
+    .status-in{color:#39d353;font-weight:bold;}
+    .status-out{color:#aaa;font-weight:bold;}
+    .hidden{display:none;}
+    @media(max-width:700px){table{font-size:12px;}th,td{padding:7px;}}
   </style>
 </head>
 
@@ -207,20 +105,11 @@
 </div>
 
 <script>
-const scriptURL = "PASTE_YOUR_SCRIPT_URL_HERE";
+const scriptURL = "https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
 
 let allRecords = [];
 
 async function loadDashboard(){
-  const pin = document.getElementById("pin").value.trim();
-  const msg = document.getElementById("loginMessage");
-
-  if(!pin){
-    msg.innerText = "Please enter your PIN.";
-    return;
-  }
-
-  async function loadDashboard(){
   const pin = document.getElementById("pin").value.trim();
   const msg = document.getElementById("loginMessage");
 
@@ -241,9 +130,6 @@ async function loadDashboard(){
     });
 
     const text = await response.text();
-
-    alert("Apps Script returned: " + text);
-
     const data = JSON.parse(text);
 
     if(!data.success){
