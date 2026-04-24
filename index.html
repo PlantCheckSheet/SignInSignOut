@@ -200,6 +200,15 @@ function showMessage(text){
 
 async function signIn(){
 
+  if(localStorage.getItem("jaoSignedIn")==="true"){
+    const signedInName=localStorage.getItem("jaoSignedInName");
+    const signedInVehicle=localStorage.getItem("jaoSignedInVehicle");
+    const signedInSite=localStorage.getItem("jaoSignedInSite");
+
+    alert(`${signedInName} (${signedInVehicle}) is already signed in on this device at ${signedInSite}. Please sign out first.`);
+    return;
+  }
+
   const name=document.getElementById("name").value.trim();
   const vehicle=document.getElementById("vehicle").value.trim();
   const site=document.getElementById("site").value.trim();
@@ -221,7 +230,6 @@ async function signIn(){
       })
     });
 
-    /* SAVE TO DEVICE */
     localStorage.setItem("jaoSignedIn","true");
     localStorage.setItem("jaoSignedInName",name);
     localStorage.setItem("jaoSignedInVehicle",vehicle);
@@ -239,7 +247,7 @@ async function signIn(){
 
 }
 
-/* SIGN OUT (DEVICE LOCKED) */
+/* SIGN OUT DEVICE LOCKED */
 
 async function signOut(){
 
@@ -264,7 +272,6 @@ async function signOut(){
       })
     });
 
-    /* CLEAR ONLY OUR KEYS */
     localStorage.removeItem("jaoSignedIn");
     localStorage.removeItem("jaoSignedInName");
     localStorage.removeItem("jaoSignedInVehicle");
@@ -299,8 +306,6 @@ window.onclick=function(event){
   const modal=document.getElementById("popupModal");
   if(event.target==modal) modal.style.display="none";
 }
-
-/* LOAD */
 
 window.onload=updateDeviceStatus;
 
