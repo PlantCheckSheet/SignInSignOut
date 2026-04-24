@@ -158,6 +158,45 @@ button{
   border-radius:6px;
   cursor:pointer;
 }
+
+#loadingOverlay{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.85);
+  justify-content:center;
+  align-items:center;
+  z-index:3000;
+}
+
+.loading-box{
+  background:#1a1a1a;
+  border:1px solid #f58220;
+  border-radius:12px;
+  padding:30px;
+  width:80%;
+  max-width:350px;
+  color:white;
+  box-shadow:0 0 25px rgba(245,130,32,0.25);
+}
+
+.spinner{
+  width:50px;
+  height:50px;
+  border:5px solid #444;
+  border-top:5px solid #f58220;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto 15px;
+}
+
+@keyframes spin{
+  0%{ transform:rotate(0deg); }
+  100%{ transform:rotate(360deg); }
+}
 </style>
 </head>
 
@@ -200,11 +239,27 @@ button{
 </div>
 </div>
 
+<div id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loadingText">Submitting sign-in...</p>
+  </div>
+</div>
+
 <script>
 
 const scriptURL="https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
 
 let capturedPhoto = "";
+
+function showLoading(text){
+  document.getElementById("loadingText").innerText = text || "Submitting...";
+  document.getElementById("loadingOverlay").style.display = "flex";
+}
+
+function hideLoading(){
+  document.getElementById("loadingOverlay").style.display = "none";
+}
 
 /* CAMERA */
 
@@ -301,6 +356,8 @@ async function signIn(){
     return;
   }
 
+  showLoading("Uploading photo and submitting sign-in...");
+
   try{
 
     const response = await fetch(scriptURL,{
@@ -316,10 +373,11 @@ async function signIn(){
 
     const result = (await response.text()).trim();
 
-    if(result.trim() !== "SIGNED_IN"){
-  alert("Sign-in failed. Script returned: " + result);
-  return;
-}
+    if(result !== "SIGNED_IN"){
+      hideLoading();
+      alert("Sign-in failed. Script returned: " + result);
+      return;
+    }
 
     localStorage.setItem("jaoSignedIn","true");
     localStorage.setItem("jaoSignedInName",name);
@@ -328,12 +386,14 @@ async function signIn(){
 
     updateDeviceStatus();
 
+    hideLoading();
     showMessage("Signed in successfully!");
     clearFields();
     clearPhoto();
     showModal();
 
   }catch{
+    hideLoading();
     alert("Error signing in.");
   }
 
@@ -352,6 +412,8 @@ async function signOut(){
   const vehicle=localStorage.getItem("jaoSignedInVehicle");
   const site=localStorage.getItem("jaoSignedInSite");
 
+  showLoading("Submitting sign-out...");
+
   try{
 
     const response = await fetch(scriptURL,{
@@ -364,9 +426,10 @@ async function signOut(){
       })
     });
 
-    const result = await response.text();
+    const result = (await response.text()).trim();
 
     if(result !== "SIGNED_OUT"){
+      hideLoading();
       alert("No active sign-in was found for this device.");
       return;
     }
@@ -378,11 +441,13 @@ async function signOut(){
 
     updateDeviceStatus();
 
+    hideLoading();
     showMessage("Signed out successfully!");
     clearFields();
     clearPhoto();
 
   }catch{
+    hideLoading();
     alert("Error signing out.");
   }
 
