@@ -5,18 +5,12 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-   <!-- iPhone / iOS icon -->
 <link rel="apple-touch-icon" sizes="180x180" href="jao-icon-180.png">
-
-<!-- Android icon -->
 <link rel="icon" type="image/png" sizes="192x192" href="jao-icon-192.png">
 
-<!-- Make it feel like an app on iPhone -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="JAO Groundworks">
-
-<!-- Android / Chrome -->
 <meta name="theme-color" content="#0d0d0d">
 
 <style>
@@ -53,20 +47,10 @@ body{
 
 .logo:hover{
   transform: scale(1.06);
-  filter:
-    drop-shadow(0 0 12px rgba(255,255,255,0.9))
-    drop-shadow(0 0 28px rgba(255,255,255,0.5));
 }
 
-h2{
-  color:#f58220;
-  margin:5px 0;
-}
-
-h3{
-  color:#fff;
-  margin-bottom:20px;
-}
+h2{ color:#f58220; margin:5px 0; }
+h3{ color:#fff; margin-bottom:20px; }
 
 input{
   width:95%;
@@ -79,9 +63,7 @@ input{
   color:#fff;
 }
 
-input::placeholder{
-  color:#aaa;
-}
+input::placeholder{ color:#aaa; }
 
 button{
   width:95%;
@@ -94,15 +76,8 @@ button{
   font-weight:bold;
 }
 
-.signin{
-  background:#f58220;
-  color:white;
-}
-
-.signout{
-  background:#555;
-  color:white;
-}
+.signin{ background:#f58220; color:white; }
+.signout{ background:#555; color:white; }
 
 .camera-btn{
   background:#222;
@@ -124,6 +99,23 @@ button{
   margin-top:15px;
   font-size:14px;
   color:#bbb;
+}
+
+.admin-link{
+  display:block;
+  margin:18px auto 0;
+  width:95%;
+  padding:13px;
+  background:#111;
+  border:1px solid #f58220;
+  color:#f58220;
+  text-decoration:none;
+  border-radius:6px;
+  font-weight:bold;
+}
+
+.admin-link:hover{
+  background:#222;
 }
 
 .photo-preview{
@@ -194,7 +186,6 @@ button{
   width:80%;
   max-width:350px;
   color:white;
-  box-shadow:0 0 25px rgba(245,130,32,0.25);
 }
 
 .spinner{
@@ -241,8 +232,9 @@ button{
 <button class="signout" onclick="signOut()">Sign Out This Device</button>
 
 <p class="success" id="message"></p>
-
 <p class="device-status" id="deviceStatus"></p>
+
+<a class="admin-link" href="admin-dashboard.html">Admin Dashboard</a>
 
 </div>
 
@@ -261,7 +253,6 @@ button{
 </div>
 
 <script>
-
 const scriptURL="https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
 
 let capturedPhoto = "";
@@ -275,18 +266,13 @@ function hideLoading(){
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
-/* CAMERA */
-
 function openCamera(){
   document.getElementById("cameraInput").click();
 }
 
 function handlePhoto(event){
   const file = event.target.files[0];
-
-  if(!file){
-    return;
-  }
+  if(!file) return;
 
   const reader = new FileReader();
 
@@ -319,8 +305,6 @@ function handlePhoto(event){
   reader.readAsDataURL(file);
 }
 
-/* DEVICE STATUS */
-
 function updateDeviceStatus(){
   const status=document.getElementById("deviceStatus");
 
@@ -335,15 +319,11 @@ function updateDeviceStatus(){
   }
 }
 
-/* UI MESSAGE */
-
 function showMessage(text){
   const msg=document.getElementById("message");
   msg.innerText=text;
   setTimeout(()=>msg.innerText="",8000);
 }
-
-/* SIGN IN */
 
 async function signIn(){
 
@@ -373,7 +353,6 @@ async function signIn(){
   showLoading("Uploading photo and submitting sign-in...");
 
   try{
-
     const response = await fetch(scriptURL,{
       method:"POST",
       body:JSON.stringify({
@@ -410,10 +389,7 @@ async function signIn(){
     hideLoading();
     alert("Error signing in.");
   }
-
 }
-
-/* SIGN OUT */
 
 async function signOut(){
 
@@ -429,7 +405,6 @@ async function signOut(){
   showLoading("Submitting sign-out...");
 
   try{
-
     const response = await fetch(scriptURL,{
       method:"POST",
       body:JSON.stringify({
@@ -464,10 +439,7 @@ async function signOut(){
     hideLoading();
     alert("Error signing out.");
   }
-
 }
-
-/* HELPERS */
 
 function clearFields(){
   document.querySelectorAll("input[type='text']").forEach(i=>i.value="");
@@ -495,7 +467,6 @@ window.onclick=function(event){
 }
 
 window.onload=updateDeviceStatus;
-
 </script>
 
 </body>
