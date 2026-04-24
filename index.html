@@ -90,8 +90,15 @@ button{
   color:white;
 }
 
+.camera-btn{
+  background:#222;
+  color:white;
+  border:1px solid #f58220;
+}
+
 .signin:hover{ background:#d96f18; }
 .signout:hover{ background:#444; }
+.camera-btn:hover{ background:#333; }
 
 .success{
   color:#39d353;
@@ -103,6 +110,21 @@ button{
   margin-top:15px;
   font-size:14px;
   color:#bbb;
+}
+
+.photo-preview{
+  display:none;
+  width:180px;
+  margin:15px auto;
+  border-radius:10px;
+  border:2px solid #f58220;
+}
+
+.consent{
+  color:#aaa;
+  font-size:12px;
+  margin:10px auto;
+  max-width:400px;
 }
 
 .modal{
@@ -152,6 +174,16 @@ button{
 <input type="text" id="vehicle" placeholder="Vehicle Registration *">
 <input type="text" id="site" placeholder="Site Location *">
 
+<input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" onchange="handlePhoto(event)">
+
+<button class="camera-btn" onclick="openCamera()">Take Sign-In Photo</button>
+
+<img id="photoPreview" class="photo-preview">
+
+<p class="consent">
+  By signing in, you confirm that your details and sign-in photo may be stored for site attendance and safety records.
+</p>
+
 <button class="signin" onclick="signIn()">Sign In</button>
 <button class="signout" onclick="signOut()">Sign Out This Device</button>
 
@@ -171,6 +203,52 @@ button{
 <script>
 
 const scriptURL="https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
+
+let capturedPhoto = "";
+
+/* CAMERA */
+
+function openCamera(){
+  document.getElementById("cameraInput").click();
+}
+
+function handlePhoto(event){
+  const file = event.target.files[0];
+
+  if(!file){
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+    const img = new Image();
+
+    img.onload = function(){
+      const canvas = document.createElement("canvas");
+      const maxWidth = 600;
+      const scale = maxWidth / img.width;
+
+      canvas.width = maxWidth;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      capturedPhoto = canvas.toDataURL("image/jpeg", 0.65);
+
+      const preview = document.getElementById("photoPreview");
+      preview.src = capturedPhoto;
+      preview.style.display = "block";
+
+      showMessage("Photo captured successfully.");
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+}
 
 /* DEVICE STATUS */
 
@@ -218,17 +296,30 @@ async function signIn(){
     return;
   }
 
+  if(!capturedPhoto){
+    alert("Please take a sign-in photo before signing in.");
+    return;
+  }
+
   try{
 
-    await fetch(scriptURL,{
+    const response = await fetch(scriptURL,{
       method:"POST",
       body:JSON.stringify({
         action:"signIn",
         name,
         vehicle,
-        site
+        site,
+        photo: capturedPhoto
       })
     });
+
+    const result = await response.text();
+
+    if(result !== "SIGNED_IN"){
+      alert("There was a problem signing in. Please try again.");
+      return;
+    }
 
     localStorage.setItem("jaoSignedIn","true");
     localStorage.setItem("jaoSignedInName",name);
@@ -239,6 +330,7 @@ async function signIn(){
 
     showMessage("Signed in successfully!");
     clearFields();
+    clearPhoto();
     showModal();
 
   }catch{
@@ -247,7 +339,7 @@ async function signIn(){
 
 }
 
-/* SIGN OUT DEVICE LOCKED */
+/* SIGN OUT */
 
 async function signOut(){
 
@@ -262,7 +354,7 @@ async function signOut(){
 
   try{
 
-    await fetch(scriptURL,{
+    const response = await fetch(scriptURL,{
       method:"POST",
       body:JSON.stringify({
         action:"signOut",
@@ -271,6 +363,13 @@ async function signOut(){
         site
       })
     });
+
+    const result = await response.text();
+
+    if(result !== "SIGNED_OUT"){
+      alert("No active sign-in was found for this device.");
+      return;
+    }
 
     localStorage.removeItem("jaoSignedIn");
     localStorage.removeItem("jaoSignedInName");
@@ -281,6 +380,7 @@ async function signOut(){
 
     showMessage("Signed out successfully!");
     clearFields();
+    clearPhoto();
 
   }catch{
     alert("Error signing out.");
@@ -291,7 +391,15 @@ async function signOut(){
 /* HELPERS */
 
 function clearFields(){
-  document.querySelectorAll("input").forEach(i=>i.value="");
+  document.querySelectorAll("input[type='text']").forEach(i=>i.value="");
+}
+
+function clearPhoto(){
+  capturedPhoto = "";
+  document.getElementById("cameraInput").value = "";
+  const preview = document.getElementById("photoPreview");
+  preview.src = "";
+  preview.style.display = "none";
 }
 
 function showModal(){
