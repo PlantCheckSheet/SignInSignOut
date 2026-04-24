@@ -226,7 +226,7 @@ function handlePhoto(event){
 
     img.onload = function(){
       const canvas = document.createElement("canvas");
-      const maxWidth = 600;
+      const maxWidth = 350;
       const scale = maxWidth / img.width;
 
       canvas.width = maxWidth;
@@ -235,7 +235,7 @@ function handlePhoto(event){
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      capturedPhoto = canvas.toDataURL("image/jpeg", 0.65);
+      capturedPhoto = canvas.toDataURL("image/jpeg", 0.45);
 
       const preview = document.getElementById("photoPreview");
       preview.src = capturedPhoto;
