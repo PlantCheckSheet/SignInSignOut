@@ -314,12 +314,12 @@ async function signIn(){
       })
     });
 
-    const result = await response.text();
+    const result = (await response.text()).trim();
 
-    if(result !== "SIGNED_IN"){
-      alert("There was a problem signing in. Please try again.");
-      return;
-    }
+    if(result.trim() !== "SIGNED_IN"){
+  alert("Sign-in failed. Script returned: " + result);
+  return;
+}
 
     localStorage.setItem("jaoSignedIn","true");
     localStorage.setItem("jaoSignedInName",name);
