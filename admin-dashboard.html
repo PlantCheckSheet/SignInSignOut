@@ -220,7 +220,16 @@ async function loadDashboard(){
     return;
   }
 
-  msg.innerText = "Error loading dashboard: " + error.message;
+  async function loadDashboard(){
+  const pin = document.getElementById("pin").value.trim();
+  const msg = document.getElementById("loginMessage");
+
+  if(!pin){
+    msg.innerText = "Please enter your PIN.";
+    return;
+  }
+
+  msg.innerText = "Loading dashboard...";
 
   try{
     const response = await fetch(scriptURL,{
@@ -231,7 +240,11 @@ async function loadDashboard(){
       })
     });
 
-    const data = await response.json();
+    const text = await response.text();
+
+    alert("Apps Script returned: " + text);
+
+    const data = JSON.parse(text);
 
     if(!data.success){
       msg.innerText = "Incorrect PIN.";
@@ -248,7 +261,7 @@ async function loadDashboard(){
     renderTable();
 
   }catch(error){
-    msg.innerText = "Error loading dashboard.";
+    msg.innerText = "Error loading dashboard: " + error.message;
   }
 }
 
