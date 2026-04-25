@@ -216,8 +216,9 @@ button{
 
 <input type="text" id="name" placeholder="Full Name *">
 <input type="text" id="vehicle" placeholder="Vehicle Registration *">
-<input type="text" id="site" placeholder="Site Location *">
-
+<select id="site">
+  <option value="">Loading sites...</option>
+</select>
 <input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" onchange="handlePhoto(event)">
 
 <button class="camera-btn" onclick="openCamera()">Take Sign-In Photo</button>
