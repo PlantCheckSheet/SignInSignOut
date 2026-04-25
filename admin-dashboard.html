@@ -210,13 +210,7 @@ function renderTable(){
       <td>${r.signIn || ""}</td>
       <td>${r.signOut || ""}</td>
       <td class="${r.status === "IN" ? "status-in" : "status-out"}">${r.status || ""}</td>
-      <td>
-  ${r.photo ? `
-    <a href="${r.photo}" target="_blank">
-      <img src="${r.photo}" style="width:55px;height:55px;object-fit:cover;border-radius:8px;border:1px solid #f58220;">
-    </a>
-  ` : ""}
-</td>
+     <td>${r.photo ? `<a href="${r.photo}" target="_blank">View</a>` : ""}</td>
     `;
 
     table.appendChild(tr);
