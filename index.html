@@ -45,14 +45,12 @@ body{
   transition: all 0.3s ease;
 }
 
-.logo:hover{
-  transform: scale(1.06);
-}
+.logo:hover{ transform: scale(1.06); }
 
 h2{ color:#f58220; margin:5px 0; }
 h3{ color:#fff; margin-bottom:20px; }
 
-input{
+input, select{
   width:95%;
   padding:13px;
   margin:7px 0;
@@ -112,10 +110,6 @@ button{
   text-decoration:none;
   border-radius:6px;
   font-weight:bold;
-}
-
-.admin-link:hover{
-  background:#222;
 }
 
 .photo-preview{
@@ -216,9 +210,11 @@ button{
 
 <input type="text" id="name" placeholder="Full Name *">
 <input type="text" id="vehicle" placeholder="Vehicle Registration *">
+
 <select id="site">
   <option value="">Loading sites...</option>
 </select>
+
 <input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" onchange="handlePhoto(event)">
 
 <button class="camera-btn" onclick="openCamera()">Take Sign-In Photo</button>
@@ -226,7 +222,7 @@ button{
 <img id="photoPreview" class="photo-preview">
 
 <p class="consent">
-  By signing in, you confirm that your details and sign-in photo may be stored for site attendance and safety records.
+  By signing in, you confirm that your details, sign-in photo and location check may be stored for site attendance and safety records.
 </p>
 
 <button class="signin" onclick="signIn()">Sign In</button>
@@ -257,6 +253,8 @@ button{
 const scriptURL="https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
 
 let capturedPhoto = "";
+let sitesList = [];
+let selectedSiteData = null;
 
 function showLoading(text){
   document.getElementById("loadingText").innerText = text || "Submitting...";
@@ -266,6 +264,111 @@ function showLoading(text){
 function hideLoading(){
   document.getElementById("loadingOverlay").style.display = "none";
 }
+
+/* LOAD SITES FROM GOOGLE SHEET */
+
+async function loadSites(){
+  const siteDropdown = document.getElementById("site");
+
+  try{
+    const response = await fetch(scriptURL,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"getSites"
+      })
+    });
+
+    const data = await response.json();
+
+    if(!data.success){
+      siteDropdown.innerHTML = `<option value="">No sites found</option>`;
+      return;
+    }
+
+    sitesList = data.sites;
+
+    siteDropdown.innerHTML = `<option value="">Select Site Location *</option>`;
+
+    sitesList.forEach(site=>{
+      const option = document.createElement("option");
+      option.value = site.name;
+      option.textContent = site.name;
+      siteDropdown.appendChild(option);
+    });
+
+  }catch(error){
+    siteDropdown.innerHTML = `<option value="">Error loading sites</option>`;
+  }
+}
+
+/* GEOFENCE */
+
+function getDistance(lat1, lon1, lat2, lon2){
+  const R = 6371000;
+  const toRad = deg => deg * Math.PI / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+function checkSiteLocation(){
+  return new Promise((resolve, reject)=>{
+
+    const selectedSite = document.getElementById("site").value;
+
+    selectedSiteData = sitesList.find(s => s.name === selectedSite);
+
+    if(!selectedSiteData){
+      reject("Please select a valid site.");
+      return;
+    }
+
+    if(!navigator.geolocation){
+      reject("Location services are not supported on this device.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position=>{
+
+      const userLat = position.coords.latitude;
+      const userLon = position.coords.longitude;
+
+      const distance = getDistance(
+        userLat,
+        userLon,
+        selectedSiteData.lat,
+        selectedSiteData.lon
+      );
+
+      if(distance <= selectedSiteData.radius){
+        resolve(true);
+      }else{
+        reject(`You are approximately ${Math.round(distance)} metres away from ${selectedSiteData.name}. You must be within ${selectedSiteData.radius} metres to sign in.`);
+      }
+
+    }, ()=>{
+      reject("Location permission is required to sign in.");
+    }, {
+      enableHighAccuracy:true,
+      timeout:15000,
+      maximumAge:0
+    });
+
+  });
+}
+
+/* CAMERA */
 
 function openCamera(){
   document.getElementById("cameraInput").click();
@@ -306,6 +409,8 @@ function handlePhoto(event){
   reader.readAsDataURL(file);
 }
 
+/* DEVICE STATUS */
+
 function updateDeviceStatus(){
   const status=document.getElementById("deviceStatus");
 
@@ -325,6 +430,8 @@ function showMessage(text){
   msg.innerText=text;
   setTimeout(()=>msg.innerText="",8000);
 }
+
+/* SIGN IN */
 
 async function signIn(){
 
@@ -348,6 +455,16 @@ async function signIn(){
 
   if(!capturedPhoto){
     alert("Please take a sign-in photo before signing in.");
+    return;
+  }
+
+  showLoading("Checking site location...");
+
+  try{
+    await checkSiteLocation();
+  }catch(error){
+    hideLoading();
+    alert(error);
     return;
   }
 
@@ -391,6 +508,8 @@ async function signIn(){
     alert("Error signing in.");
   }
 }
+
+/* SIGN OUT */
 
 async function signOut(){
 
@@ -442,8 +561,11 @@ async function signOut(){
   }
 }
 
+/* HELPERS */
+
 function clearFields(){
   document.querySelectorAll("input[type='text']").forEach(i=>i.value="");
+  document.getElementById("site").value = "";
 }
 
 function clearPhoto(){
@@ -467,7 +589,10 @@ window.onclick=function(event){
   if(event.target==modal) modal.style.display="none";
 }
 
-window.onload=updateDeviceStatus;
+window.onload=function(){
+  updateDeviceStatus();
+  loadSites();
+};
 </script>
 
 </body>
