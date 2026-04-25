@@ -27,8 +27,9 @@
     a{color:#f58220;font-weight:bold;}
     .status-in{color:#39d353;font-weight:bold;}
     .status-out{color:#aaa;font-weight:bold;}
+    .photo-thumb{width:55px;height:55px;object-fit:cover;border-radius:8px;border:1px solid #f58220;background:#111;}
     .hidden{display:none;}
-    @media(max-width:700px){table{font-size:12px;}th,td{padding:7px;}}
+    @media(max-width:700px){table{font-size:12px;}th,td{padding:7px;}.photo-thumb{width:45px;height:45px;}}
   </style>
 </head>
 
@@ -151,6 +152,18 @@ async function loadDashboard(){
   }
 }
 
+function getDriveImagePreview(url){
+  if(!url) return "";
+
+  const match = url.match(/\/d\/(.*?)\//);
+
+  if(match && match[1]){
+    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  }
+
+  return url;
+}
+
 function buildSiteFilter(){
   const siteFilter = document.getElementById("siteFilter");
   const currentValue = siteFilter.value;
@@ -202,6 +215,7 @@ function renderTable(){
 
   records.forEach(r=>{
     const tr = document.createElement("tr");
+    const previewUrl = getDriveImagePreview(r.photo);
 
     tr.innerHTML = `
       <td>${r.name || ""}</td>
@@ -210,7 +224,13 @@ function renderTable(){
       <td>${r.signIn || ""}</td>
       <td>${r.signOut || ""}</td>
       <td class="${r.status === "IN" ? "status-in" : "status-out"}">${r.status || ""}</td>
-     <td>${r.photo ? `<a href="${r.photo}" target="_blank">View</a>` : ""}</td>
+      <td>
+        ${r.photo ? `
+          <a href="${r.photo}" target="_blank">
+            <img class="photo-thumb" src="${previewUrl}" alt="Sign-in photo">
+          </a>
+        ` : ""}
+      </td>
     `;
 
     table.appendChild(tr);
