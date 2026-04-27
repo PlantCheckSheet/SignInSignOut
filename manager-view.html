@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>JAO Manager View</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="jao-icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="jao-icon-192.png">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <style>
+    *{box-sizing:border-box;font-family:Arial, Helvetica, sans-serif;}
+
+    body{
+      margin:0;
+      background:#0d0d0d;
+      color:white;
+      min-height:100vh;
+    }
+
+    .header{
+      background:linear-gradient(135deg,#f58220,#d96f18);
+      color:#111;
+      padding:22px 16px 34px;
+      text-align:center;
+      border-bottom-left-radius:28px;
+      border-bottom-right-radius:28px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    .badge{
+      display:inline-block;
+      background:rgba(255,255,255,0.28);
+      padding:6px 14px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:bold;
+      letter-spacing:1px;
+      margin-bottom:10px;
+    }
+
+    .logo{
+      max-width:220px;
+      width:75%;
+      display:block;
+      margin:8px auto 10px;
+      filter:drop-shadow(0 0 8px rgba(255,255,255,0.8));
+    }
+
+    .header h1{
+      margin:8px 0 4px;
+      font-size:24px;
+    }
+
+    .header p{
+      margin:0;
+      font-weight:600;
+      font-size:13px;
+    }
+
+    .container{
+      max-width:650px;
+      margin:-18px auto 0;
+      padding:0 16px 28px;
+    }
+
+    .login-box,.summary,.worker-card{
+      background:#1a1a1a;
+      border:1px solid #2a2a2a;
+      border-radius:16px;
+      box-shadow:0 10px 25px rgba(0,0,0,0.25);
+    }
+
+    .login-box{
+      padding:22px;
+      text-align:center;
+    }
+
+    input,button{
+      width:100%;
+      padding:14px;
+      margin-top:10px;
+      border-radius:10px;
+      border:1px solid #444;
+      font-size:16px;
+    }
+
+    input{
+      background:#111;
+      color:white;
+    }
+
+    button{
+      background:#f58220;
+      color:white;
+      border:none;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    .summary{
+      padding:18px;
+      margin-bottom:14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .summary h2{
+      margin:0;
+      color:#f58220;
+      font-size:34px;
+    }
+
+    .summary p{
+      margin:0;
+      color:#bbb;
+      font-size:13px;
+      font-weight:bold;
+    }
+
+    .worker-card{
+      display:flex;
+      gap:14px;
+      padding:14px;
+      margin-bottom:12px;
+      align-items:center;
+    }
+
+    .photo{
+      width:72px;
+      height:72px;
+      border-radius:14px;
+      object-fit:cover;
+      border:2px solid #f58220;
+      background:#111;
+      flex-shrink:0;
+    }
+
+    .info{
+      flex:1;
+      min-width:0;
+    }
+
+    .name{
+      font-size:18px;
+      font-weight:bold;
+      color:white;
+    }
+
+    .meta{
+      color:#bbb;
+      font-size:13px;
+      margin-top:4px;
+    }
+
+    .time{
+      color:#39d353;
+      font-weight:bold;
+      margin-top:6px;
+      font-size:14px;
+    }
+
+    .empty{
+      text-align:center;
+      color:#aaa;
+      margin-top:25px;
+    }
+
+    .hidden{
+      display:none;
+    }
+
+    .refresh{
+      font-size:12px;
+      color:#aaa;
+      text-align:center;
+      margin-top:14px;
+    }
+
+    .logout{
+      background:#333;
+      margin-top:12px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="badge">MANAGER VIEW</div>
+  <img src="logo.png" class="logo" alt="JAO Groundworks Ltd Logo">
+  <h1>Live Site Attendance</h1>
+  <p>Current workers signed in</p>
+</div>
+
+<div class="container">
+
+  <div class="login-box" id="loginBox">
+    <h2>Manager Login</h2>
+    <input type="password" id="pin" placeholder="Enter Manager PIN">
+    <button onclick="login()">Open Manager View</button>
+    <p id="loginMsg"></p>
+  </div>
+
+  <div id="managerView" class="hidden">
+
+    <div class="summary">
+      <div>
+        <h2 id="activeCount">0</h2>
+        <p>Currently Signed In</p>
+      </div>
+      <button style="width:auto;padding:10px 14px;margin:0;" onclick="loadData()">Refresh</button>
+    </div>
+
+    <div id="list"></div>
+
+    <p class="empty hidden" id="emptyMsg">
+      No workers currently signed in
+    </p>
+
+    <p class="refresh" id="refreshText"></p>
+
+    <button class="logout" onclick="logout()">Log Out</button>
+
+  </div>
+
+</div>
+
+<script>
+const scriptURL = "https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSPDkSVjuJFg_YIIMchO5u2ivyn7ibNZuA52weq8p4mqyX1VA/exec";
+
+let managerPin = "";
+let refreshTimer = null;
+
+function login(){
+  const pin = document.getElementById("pin").value.trim();
+  const msg = document.getElementById("loginMsg");
+
+  if(!pin){
+    msg.innerText = "Please enter the manager PIN.";
+    return;
+  }
+
+  managerPin = pin;
+  msg.innerText = "Loading...";
+
+  loadData(true);
+}
+
+function logout(){
+  managerPin = "";
+  clearInterval(refreshTimer);
+  refreshTimer = null;
+
+  document.getElementById("pin").value = "";
+  document.getElementById("loginBox").classList.remove("hidden");
+  document.getElementById("managerView").classList.add("hidden");
+}
+
+function getDrivePreview(url){
+  if(!url) return "";
+
+  let fileId = "";
+  const match1 = url.match(/\/d\/([^/]+)/);
+  const match2 = url.match(/id=([^&]+)/);
+
+  if(match1 && match1[1]){
+    fileId = match1[1];
+  }else if(match2 && match2[1]){
+    fileId = match2[1];
+  }
+
+  if(fileId){
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`;
+  }
+
+  return url;
+}
+
+function calculateTimeWorked(signIn){
+  if(!signIn) return "";
+
+  const parts = signIn.split(" ");
+  if(parts.length < 2) return "";
+
+  const d = parts[0].split("/");
+  const t = parts[1].split(":");
+
+  const start = new Date(
+    d[2], d[1]-1, d[0],
+    t[0], t[1], t[2] || 0
+  );
+
+  const now = new Date();
+  const diffHours = (now - start) / (1000 * 60 * 60);
+
+  if(diffHours < 1){
+    return Math.round(diffHours * 60) + " mins";
+  }
+
+  return diffHours.toFixed(1) + " hrs";
+}
+
+async function loadData(firstLoad=false){
+  try{
+    const res = await fetch(scriptURL,{
+      method:"POST",
+      body:JSON.stringify({
+        action:"dashboardData",
+        pin:managerPin
+      })
+    });
+
+    const data = await res.json();
+
+    if(!data.success){
+      document.getElementById("loginMsg").innerText = "Incorrect PIN.";
+      return;
+    }
+
+    document.getElementById("loginBox").classList.add("hidden");
+    document.getElementById("managerView").classList.remove("hidden");
+
+    const active = data.records.filter(r => r.status === "IN");
+    document.getElementById("activeCount").innerText = active.length;
+
+    const list = document.getElementById("list");
+    const emptyMsg = document.getElementById("emptyMsg");
+
+    list.innerHTML = "";
+
+    if(active.length === 0){
+      emptyMsg.classList.remove("hidden");
+    }else{
+      emptyMsg.classList.add("hidden");
+
+      active.forEach(r=>{
+        const card = document.createElement("div");
+        card.className = "worker-card";
+
+        const imgUrl = getDrivePreview(r.photo);
+
+        card.innerHTML = `
+          <img class="photo" src="${imgUrl}" alt="Worker photo">
+          <div class="info">
+            <div class="name">${r.name || ""}</div>
+            <div class="meta">🚗 ${r.vehicle || ""}</div>
+            <div class="meta">📍 ${r.site || ""}</div>
+            <div class="meta">🕒 Signed in: ${r.signIn || ""}</div>
+            <div class="time">⏱ On site: ${calculateTimeWorked(r.signIn)}</div>
+          </div>
+        `;
+
+        list.appendChild(card);
+      });
+    }
+
+    document.getElementById("refreshText").innerText =
+      "Last refreshed: " + new Date().toLocaleTimeString("en-GB");
+
+    if(firstLoad && !refreshTimer){
+      refreshTimer = setInterval(loadData, 30000);
+    }
+
+  }catch(error){
+    if(firstLoad){
+      document.getElementById("loginMsg").innerText = "Error loading manager view.";
+    }
+  }
+}
+</script>
+
+</body>
+</html>
