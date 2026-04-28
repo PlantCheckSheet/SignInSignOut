@@ -61,6 +61,7 @@ input, select{
   background:#111;
   color:#fff;
 }
+
 select{
   appearance:none;
   -webkit-appearance:none;
@@ -72,6 +73,7 @@ select{
   background-size:18px;
   padding-right:40px;
 }
+
 input::placeholder{ color:#aaa; }
 
 button{
@@ -136,6 +138,46 @@ button{
   font-size:12px;
   margin:10px auto;
   max-width:400px;
+}
+
+.havs-box{
+  display:none;
+  width:95%;
+  margin:10px auto;
+  padding:12px;
+  border:1px solid #f58220;
+  border-radius:8px;
+  background:#111;
+  color:#fff;
+  text-align:left;
+  box-sizing:border-box;
+}
+
+.havs-box label{
+  display:block;
+  margin-top:8px;
+  font-size:14px;
+  color:#ddd;
+}
+
+.havs-row{
+  border-top:1px solid #333;
+  margin-top:10px;
+  padding-top:10px;
+}
+
+.havs-row:first-child{
+  border-top:none;
+  margin-top:0;
+  padding-top:0;
+}
+
+.small-btn{
+  background:#222;
+  color:#fff;
+  border:1px solid #f58220;
+  font-size:14px;
+  padding:10px;
 }
 
 .modal{
@@ -226,6 +268,36 @@ button{
   <option value="">Loading sites...</option>
 </select>
 
+<select id="usedVibration" onchange="toggleHAVS()">
+  <option value="">Used vibratory equipment yesterday? *</option>
+  <option value="No">No</option>
+  <option value="Yes">Yes</option>
+</select>
+
+<div id="havsBox" class="havs-box">
+  <strong>HAVS Equipment Used Yesterday</strong>
+
+  <div id="havsItems">
+    <div class="havs-row">
+      <label>Plant / Tool Used</label>
+      <input type="text" class="havsTool" placeholder="Example: breaker, whacker plate, disc cutter">
+
+      <label>Duration Used</label>
+      <select class="havsDuration">
+        <option value="">Select duration</option>
+        <option value="0-15 minutes">0-15 minutes</option>
+        <option value="15-30 minutes">15-30 minutes</option>
+        <option value="30-60 minutes">30-60 minutes</option>
+        <option value="1-2 hours">1-2 hours</option>
+        <option value="2-4 hours">2-4 hours</option>
+        <option value="4+ hours">4+ hours</option>
+      </select>
+    </div>
+  </div>
+
+  <button type="button" class="small-btn" onclick="addHAVSItem()">Add Another Tool</button>
+</div>
+
 <input type="file" id="cameraInput" accept="image/*" capture="user" style="display:none;" onchange="handlePhoto(event)">
 
 <button class="camera-btn" onclick="openCamera()">Take Sign-In Photo</button>
@@ -233,7 +305,7 @@ button{
 <img id="photoPreview" class="photo-preview">
 
 <p class="consent">
-  By signing in, you confirm that your details, sign-in photo and location check may be stored for site attendance and safety records.
+  By signing in, you confirm that your details, sign-in photo, location check and HAVS declaration may be stored for site attendance and safety records.
 </p>
 
 <button class="signin" onclick="signIn()">Sign In</button>
@@ -420,6 +492,72 @@ function handlePhoto(event){
   reader.readAsDataURL(file);
 }
 
+/* HAVS */
+
+function toggleHAVS(){
+  const used = document.getElementById("usedVibration").value;
+  const box = document.getElementById("havsBox");
+
+  box.style.display = used === "Yes" ? "block" : "none";
+
+  if(used !== "Yes"){
+    document.querySelectorAll(".havsTool").forEach(i => i.value = "");
+    document.querySelectorAll(".havsDuration").forEach(i => i.value = "");
+  }
+}
+
+function addHAVSItem(){
+  const container = document.getElementById("havsItems");
+
+  const row = document.createElement("div");
+  row.className = "havs-row";
+
+  row.innerHTML = `
+    <label>Plant / Tool Used</label>
+    <input type="text" class="havsTool" placeholder="Example: breaker, whacker plate, disc cutter">
+
+    <label>Duration Used</label>
+    <select class="havsDuration">
+      <option value="">Select duration</option>
+      <option value="0-15 minutes">0-15 minutes</option>
+      <option value="15-30 minutes">15-30 minutes</option>
+      <option value="30-60 minutes">30-60 minutes</option>
+      <option value="1-2 hours">1-2 hours</option>
+      <option value="2-4 hours">2-4 hours</option>
+      <option value="4+ hours">4+ hours</option>
+    </select>
+  `;
+
+  container.appendChild(row);
+}
+
+function getHAVSData(){
+  const usedVibration = document.getElementById("usedVibration").value;
+  const havsData = [];
+
+  if(usedVibration === "Yes"){
+    const tools = document.querySelectorAll(".havsTool");
+    const durations = document.querySelectorAll(".havsDuration");
+
+    tools.forEach((tool, index)=>{
+      const toolName = tool.value.trim();
+      const duration = durations[index].value;
+
+      if(toolName || duration){
+        havsData.push({
+          tool: toolName,
+          duration: duration
+        });
+      }
+    });
+  }
+
+  return {
+    usedVibration,
+    havsData
+  };
+}
+
 /* DEVICE STATUS */
 
 function updateDeviceStatus(){
@@ -458,10 +596,26 @@ async function signIn(){
   const name=document.getElementById("name").value.trim();
   const vehicle=document.getElementById("vehicle").value.trim();
   const site=document.getElementById("site").value.trim();
+  const usedVibration=document.getElementById("usedVibration").value;
+  const havsInfo=getHAVSData();
 
-  if(!name||!vehicle||!site){
+  if(!name||!vehicle||!site||!usedVibration){
     alert("Please complete all fields.");
     return;
+  }
+
+  if(usedVibration === "Yes" && havsInfo.havsData.length === 0){
+    alert("Please enter the vibratory equipment used and duration.");
+    return;
+  }
+
+  if(usedVibration === "Yes"){
+    for(const item of havsInfo.havsData){
+      if(!item.tool || !item.duration){
+        alert("Please complete both the tool name and duration for each HAVS entry.");
+        return;
+      }
+    }
   }
 
   if(!capturedPhoto){
@@ -489,7 +643,9 @@ async function signIn(){
         name,
         vehicle,
         site,
-        photo: capturedPhoto
+        photo: capturedPhoto,
+        usedVibration: havsInfo.usedVibration,
+        havsData: havsInfo.havsData
       })
     });
 
@@ -577,6 +733,27 @@ async function signOut(){
 function clearFields(){
   document.querySelectorAll("input[type='text']").forEach(i=>i.value="");
   document.getElementById("site").value = "";
+  document.getElementById("usedVibration").value = "";
+  document.getElementById("havsBox").style.display = "none";
+
+  const havsItems = document.getElementById("havsItems");
+  havsItems.innerHTML = `
+    <div class="havs-row">
+      <label>Plant / Tool Used</label>
+      <input type="text" class="havsTool" placeholder="Example: breaker, whacker plate, disc cutter">
+
+      <label>Duration Used</label>
+      <select class="havsDuration">
+        <option value="">Select duration</option>
+        <option value="0-15 minutes">0-15 minutes</option>
+        <option value="15-30 minutes">15-30 minutes</option>
+        <option value="30-60 minutes">30-60 minutes</option>
+        <option value="1-2 hours">1-2 hours</option>
+        <option value="2-4 hours">2-4 hours</option>
+        <option value="4+ hours">4+ hours</option>
+      </select>
+    </div>
+  `;
 }
 
 function clearPhoto(){
