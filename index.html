@@ -42,10 +42,7 @@ body{
   filter:
     drop-shadow(0 0 8px rgba(255,255,255,0.6))
     drop-shadow(0 0 18px rgba(255,255,255,0.3));
-  transition: all 0.3s ease;
 }
-
-.logo:hover{ transform: scale(1.06); }
 
 h2{ color:#f58220; margin:5px 0; }
 h3{ color:#fff; margin-bottom:20px; }
@@ -61,20 +58,6 @@ input, select{
   background:#111;
   color:#fff;
 }
-
-select{
-  appearance:none;
-  -webkit-appearance:none;
-  -moz-appearance:none;
-  background:#111;
-  background-image:url("data:image/svg+xml,%3Csvg fill='%23f58220' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;
-  background-position:right 12px center;
-  background-size:18px;
-  padding-right:40px;
-}
-
-input::placeholder{ color:#aaa; }
 
 button{
   width:95%;
@@ -95,10 +78,6 @@ button{
   color:white;
   border:1px solid #f58220;
 }
-
-.signin:hover{ background:#d96f18; }
-.signout:hover{ background:#444; }
-.camera-btn:hover{ background:#333; }
 
 .success{
   color:#39d353;
@@ -166,12 +145,6 @@ button{
   padding-top:10px;
 }
 
-.havs-row:first-child{
-  border-top:none;
-  margin-top:0;
-  padding-top:0;
-}
-
 .small-btn{
   background:#222;
   color:#fff;
@@ -193,12 +166,12 @@ button{
 
 .modal-content{
   background:#1a1a1a;
-  margin:15% auto;
+  margin:10% auto;
   padding:25px;
   border-radius:12px;
   border:1px solid #f58220;
-  width:80%;
-  max-width:400px;
+  width:85%;
+  max-width:440px;
   color:#fff;
 }
 
@@ -207,9 +180,47 @@ button{
   color:white;
   padding:10px 20px;
   margin-top:15px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+}
+
+.doc-list{
+  text-align:left;
+  max-height:260px;
+  overflow:auto;
+  margin:15px 0;
+  padding:10px;
+  background:#111;
+  border:1px solid #333;
+  border-radius:8px;
+}
+
+.doc-list a{
+  display:block;
+  color:#f58220;
+  font-weight:bold;
+  margin:10px 0;
+  text-decoration:none;
+}
+
+.doc-list span{
+  display:block;
+  color:#aaa;
+  font-size:12px;
+  margin-top:3px;
+}
+
+.ack-label{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  text-align:left;
+  color:#fff;
+  font-size:14px;
+  margin-top:12px;
+}
+
+.ack-label input{
+  width:auto;
+  margin-top:3px;
 }
 
 #loadingOverlay{
@@ -305,7 +316,7 @@ button{
 <img id="photoPreview" class="photo-preview">
 
 <p class="consent">
-  By signing in, you confirm that your details, sign-in photo, location check and HAVS declaration may be stored for site attendance and safety records.
+  By signing in, you confirm that your details, sign-in photo, location check, HAVS declaration and document acknowledgements may be stored for site attendance and safety records.
 </p>
 
 <button class="signin" onclick="signIn()">Sign In</button>
@@ -319,10 +330,27 @@ button{
 </div>
 
 <div id="popupModal" class="modal">
-<div class="modal-content">
-<p>Signed in successfully.</p>
-<button class="close-btn" onclick="closeModal()">OK</button>
+  <div class="modal-content">
+    <p>Signed in successfully.</p>
+    <button class="close-btn" onclick="closeModal()">OK</button>
+  </div>
 </div>
+
+<div id="documentAckModal" class="modal">
+  <div class="modal-content">
+    <h3>Site Documents</h3>
+    <p>You must read and accept the documents below before signing in.</p>
+
+    <div class="doc-list" id="pendingDocsList"></div>
+
+    <label class="ack-label">
+      <input type="checkbox" id="documentAckCheckbox">
+      <span>I confirm I have read and agree to the site documents listed above.</span>
+    </label>
+
+    <button class="signin" onclick="confirmDocumentAcknowledgement()">Agree & Continue</button>
+    <button class="signout" onclick="cancelDocumentAcknowledgement()">Cancel</button>
+  </div>
 </div>
 
 <div id="loadingOverlay">
@@ -338,6 +366,7 @@ const scriptURL="https://script.google.com/macros/s/AKfycbxH1p_PiBFm45VSpBC83nSP
 let capturedPhoto = "";
 let sitesList = [];
 let selectedSiteData = null;
+let pendingDocumentAcknowledgements = [];
 
 function showLoading(text){
   document.getElementById("loadingText").innerText = text || "Submitting...";
@@ -348,7 +377,16 @@ function hideLoading(){
   document.getElementById("loadingOverlay").style.display = "none";
 }
 
-/* LOAD SITES FROM GOOGLE SHEET */
+function escapeHtml(value){
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+/* LOAD SITES */
 
 async function loadSites(){
   const siteDropdown = document.getElementById("site");
@@ -356,9 +394,7 @@ async function loadSites(){
   try{
     const response = await fetch(scriptURL,{
       method:"POST",
-      body:JSON.stringify({
-        action:"getSites"
-      })
+      body:JSON.stringify({ action:"getSites" })
     });
 
     const data = await response.json();
@@ -369,7 +405,6 @@ async function loadSites(){
     }
 
     sitesList = data.sites;
-
     siteDropdown.innerHTML = `<option value="">Select Site Location *</option>`;
 
     sitesList.forEach(site=>{
@@ -381,6 +416,74 @@ async function loadSites(){
 
   }catch(error){
     siteDropdown.innerHTML = `<option value="">Error loading sites</option>`;
+  }
+}
+
+/* DOCUMENT ACKNOWLEDGEMENTS */
+
+async function getPendingDocumentAcknowledgements(name, vehicle, site){
+  const response = await fetch(scriptURL,{
+    method:"POST",
+    body:JSON.stringify({
+      action:"getPendingDocumentAcknowledgements",
+      name,
+      vehicle,
+      site
+    })
+  });
+
+  const data = await response.json();
+
+  if(!data.success){
+    throw new Error(data.message || "Could not check document acknowledgements.");
+  }
+
+  return Array.isArray(data.documents) ? data.documents : [];
+}
+
+function showDocumentAcknowledgementModal(documents){
+  pendingDocumentAcknowledgements = documents;
+
+  const list = document.getElementById("pendingDocsList");
+
+  list.innerHTML = documents.map(doc => `
+    <a href="${escapeHtml(doc.url)}" target="_blank" rel="noopener">
+      📄 ${escapeHtml(doc.name)}
+      <span>Last updated: ${escapeHtml(doc.lastUpdated || "Unknown")}</span>
+    </a>
+  `).join("");
+
+  document.getElementById("documentAckCheckbox").checked = false;
+  document.getElementById("documentAckModal").style.display = "block";
+}
+
+function waitForDocumentAcknowledgement(){
+  return new Promise((resolve, reject)=>{
+    window.resolveDocumentAcknowledgement = resolve;
+    window.rejectDocumentAcknowledgement = reject;
+  });
+}
+
+function confirmDocumentAcknowledgement(){
+  const checked = document.getElementById("documentAckCheckbox").checked;
+
+  if(!checked){
+    alert("Please tick to confirm you have read and agree to the site documents.");
+    return;
+  }
+
+  document.getElementById("documentAckModal").style.display = "none";
+
+  if(window.resolveDocumentAcknowledgement){
+    window.resolveDocumentAcknowledgement(pendingDocumentAcknowledgements);
+  }
+}
+
+function cancelDocumentAcknowledgement(){
+  document.getElementById("documentAckModal").style.display = "none";
+
+  if(window.rejectDocumentAcknowledgement){
+    window.rejectDocumentAcknowledgement("You must agree to the site documents before signing in.");
   }
 }
 
@@ -407,9 +510,7 @@ function getDistance(lat1, lon1, lat2, lon2){
 
 function checkSiteLocation(){
   return new Promise((resolve, reject)=>{
-
     const selectedSite = document.getElementById("site").value;
-
     selectedSiteData = sitesList.find(s => s.name === selectedSite);
 
     if(!selectedSiteData){
@@ -423,13 +524,9 @@ function checkSiteLocation(){
     }
 
     navigator.geolocation.getCurrentPosition(position=>{
-
-      const userLat = position.coords.latitude;
-      const userLon = position.coords.longitude;
-
       const distance = getDistance(
-        userLat,
-        userLon,
+        position.coords.latitude,
+        position.coords.longitude,
         selectedSiteData.lat,
         selectedSiteData.lon
       );
@@ -447,7 +544,6 @@ function checkSiteLocation(){
       timeout:15000,
       maximumAge:0
     });
-
   });
 }
 
@@ -552,10 +648,7 @@ function getHAVSData(){
     });
   }
 
-  return {
-    usedVibration,
-    havsData
-  };
+  return { usedVibration, havsData };
 }
 
 /* DEVICE STATUS */
@@ -633,6 +726,24 @@ async function signIn(){
     return;
   }
 
+  let documentAcknowledgements = [];
+
+  showLoading("Checking site documents...");
+
+  try{
+    const pendingDocs = await getPendingDocumentAcknowledgements(name, vehicle, site);
+
+    if(pendingDocs.length > 0){
+      hideLoading();
+      showDocumentAcknowledgementModal(pendingDocs);
+      documentAcknowledgements = await waitForDocumentAcknowledgement();
+    }
+  }catch(error){
+    hideLoading();
+    alert(error);
+    return;
+  }
+
   showLoading("Uploading photo and submitting sign-in...");
 
   try{
@@ -645,7 +756,8 @@ async function signIn(){
         site,
         photo: capturedPhoto,
         usedVibration: havsInfo.usedVibration,
-        havsData: havsInfo.havsData
+        havsData: havsInfo.havsData,
+        documentAcknowledgements: documentAcknowledgements
       })
     });
 
@@ -773,9 +885,11 @@ function closeModal(){
 }
 
 window.onclick=function(event){
-  const modal=document.getElementById("popupModal");
-  if(event.target==modal) modal.style.display="none";
-}
+  const successModal=document.getElementById("popupModal");
+  const docModal=document.getElementById("documentAckModal");
+
+  if(event.target==successModal) successModal.style.display="none";
+};
 
 window.onload=function(){
   updateDeviceStatus();
