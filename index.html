@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>JAO Groundworks Ltd - Visitor Sign In</title>
+<title>EXAMPLE - Visitor Sign In</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="apple-touch-icon" sizes="180x180" href="jao-icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="jao-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="EXAMPLE-icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="EXAMPLE-icon-192.png">
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="JAO Groundworks">
+<meta name="apple-mobile-web-app-title" content="EXAMPLE">
 <meta name="theme-color" content="#0d0d0d">
 
 <style>
@@ -269,7 +269,7 @@ button{
 
 <img src="logo.png" class="logo">
 
-<h2>JAO Groundworks Ltd</h2>
+<h2>EXAMPLE</h2>
 <h3>Sign In / Out</h3>
 
 <input type="text" id="name" placeholder="Full Name *">
@@ -656,10 +656,10 @@ function getHAVSData(){
 function updateDeviceStatus(){
   const status=document.getElementById("deviceStatus");
 
-  if(localStorage.getItem("jaoSignedIn")==="true"){
-    const name=localStorage.getItem("jaoSignedInName");
-    const vehicle=localStorage.getItem("jaoSignedInVehicle");
-    const site=localStorage.getItem("jaoSignedInSite");
+  if(localStorage.getItem("EXAMPLESignedIn")==="true"){
+    const name=localStorage.getItem("EXAMPLESignedInName");
+    const vehicle=localStorage.getItem("EXAMPLESignedInVehicle");
+    const site=localStorage.getItem("EXAMPLESignedInSite");
 
     status.innerText=`This device is signed in as ${name} (${vehicle}) at ${site}`;
   }else{
@@ -677,10 +677,10 @@ function showMessage(text){
 
 async function signIn(){
 
-  if(localStorage.getItem("jaoSignedIn")==="true"){
-    const signedInName=localStorage.getItem("jaoSignedInName");
-    const signedInVehicle=localStorage.getItem("jaoSignedInVehicle");
-    const signedInSite=localStorage.getItem("jaoSignedInSite");
+  if(localStorage.getItem("EXAMPLESignedIn")==="true"){
+    const signedInName=localStorage.getItem("EXAMPLESignedInName");
+    const signedInVehicle=localStorage.getItem("EXAMPLESignedInVehicle");
+    const signedInSite=localStorage.getItem("EXAMPLESignedInSite");
 
     alert(`${signedInName} (${signedInVehicle}) is already signed in on this device at ${signedInSite}. Please sign out first.`);
     return;
@@ -769,10 +769,10 @@ async function signIn(){
       return;
     }
 
-    localStorage.setItem("jaoSignedIn","true");
-    localStorage.setItem("jaoSignedInName",name);
-    localStorage.setItem("jaoSignedInVehicle",vehicle);
-    localStorage.setItem("jaoSignedInSite",site);
+    localStorage.setItem("EXAMPLESignedIn","true");
+    localStorage.setItem("EXAMPLESignedInName",name);
+    localStorage.setItem("EXAMPLESignedInVehicle",vehicle);
+    localStorage.setItem("EXAMPLESignedInSite",site);
 
     updateDeviceStatus();
 
@@ -792,14 +792,14 @@ async function signIn(){
 
 async function signOut(){
 
-  if(localStorage.getItem("jaoSignedIn")!=="true"){
+  if(localStorage.getItem("EXAMPLESignedIn")!=="true"){
     alert("This device is not currently signed in.");
     return;
   }
 
-  const name=localStorage.getItem("jaoSignedInName");
-  const vehicle=localStorage.getItem("jaoSignedInVehicle");
-  const site=localStorage.getItem("jaoSignedInSite");
+  const name=localStorage.getItem("EXAMPLESignedInName");
+  const vehicle=localStorage.getItem("EXAMPLESignedInVehicle");
+  const site=localStorage.getItem("EXAMPLESignedInSite");
 
   showLoading("Submitting sign-out...");
 
@@ -822,10 +822,10 @@ async function signOut(){
       return;
     }
 
-    localStorage.removeItem("jaoSignedIn");
-    localStorage.removeItem("jaoSignedInName");
-    localStorage.removeItem("jaoSignedInVehicle");
-    localStorage.removeItem("jaoSignedInSite");
+    localStorage.removeItem("EXAMPLESignedIn");
+    localStorage.removeItem("EXAMPLESignedInName");
+    localStorage.removeItem("EXAMPLESignedInVehicle");
+    localStorage.removeItem("EXAMPLESignedInSite");
 
     updateDeviceStatus();
 
